@@ -143,27 +143,56 @@ def edit_profile(profiles: ProfileStorage, all_profiles: list, test_mode: bool =
     profile = all_profiles[idx]
     print_info(f"编辑配置组: {profile.name}")
 
-    # 重新输入各字段
-    provider = ask_provider()
-    if provider is None:
-        return
-    api_key = ask_api_key(provider)
-    if api_key is None:
-        return
-    base_url = ask_base_url(provider)
-    if base_url is None:
-        return
-    model = ask_model(provider)
-    if model is None:
-        return
+    # 当前值
+    current_provider = profile.provider
+    current_api_key = profile.api_key
+    current_base_url = profile.base_url
+    current_model = profile.model
+
+    # 让用户选择要修改的字段
+    while True:
+        print(f"\n\x1b[1;33m当前配置：\x1b[0m")
+        print(f"  1. 提供商: {current_provider}")
+        print(f"  2. API Key: {'*' * 8}****" if len(current_api_key) > 8 else "  2. API Key: ****")
+        print(f"  3. Base URL: {current_base_url}")
+        print(f"  4. 模型: {current_model}")
+        print(f"  0. 保存并返回")
+
+        field_choice = input("\n请选择要修改的字段编号: ").strip()
+
+        if field_choice == "0":
+            break
+        elif field_choice == "1":
+            new_provider = ask_provider()
+            if new_provider is None:
+                continue
+            current_provider = new_provider
+        elif field_choice == "2":
+            new_api_key = ask_api_key(current_provider)
+            if new_api_key is None:
+                continue
+            current_api_key = new_api_key
+        elif field_choice == "3":
+            new_base_url = ask_base_url(current_provider)
+            if new_base_url is None:
+                continue
+            current_base_url = new_base_url
+        elif field_choice == "4":
+            new_model = ask_model(current_provider)
+            if new_model is None:
+                continue
+            current_model = new_model
+        else:
+            print_error("无效选择")
+            continue
 
     # 更新配置
     updated = ModelConfig(
         name=profile.name,
-        provider=provider,
-        api_key=api_key,
-        base_url=base_url,
-        model=model
+        provider=current_provider,
+        api_key=current_api_key,
+        base_url=current_base_url,
+        model=current_model
     )
     profiles.update_profile(profile.name, updated)
     print_success(f"配置组 '{profile.name}' 已更新")
@@ -243,7 +272,7 @@ def apply_to_claude(profiles: ProfileStorage, test_mode: bool = False):
     print(f"\x1b[1;33m模型:\x1b[0m {profile.model}")
 
     confirm = input("\n确认应用? (y/N): ").strip().lower()
-    if confirm != 'y':
+    if confirm != 'y' and confirm != '':
         print_info("已取消应用")
         return
 

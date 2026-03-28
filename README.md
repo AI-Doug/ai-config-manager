@@ -6,6 +6,18 @@
 
 ## 安装
 
+### 方式一：本地开发安装（推荐）
+
+```bash
+git clone <repository-url>
+cd ai-config-manager
+python3 -m venv .venv
+source .venv/bin/activate
+pip install .
+```
+
+### 方式二：直接安装
+
 ```bash
 pip install ai-config-manager
 ```

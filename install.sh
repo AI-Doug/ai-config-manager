@@ -221,4 +221,8 @@ else
     echo ""
     echo "=================================================="
 fi
+
+# 立即加载 bashrc 使 PATH 生效
+source ~/.bashrc
+
 echo ""

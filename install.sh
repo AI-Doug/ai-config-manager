@@ -142,18 +142,24 @@ add_to_path() {
     if [[ ":$PATH:" != *":$dir:"* ]]; then
         # 添加到 PATH（临时）
         export PATH="$PATH:$dir"
-        # 检测 shell 配置文件
-        local shell_rc=""
-        if [ -n "$BASH_VERSION" ]; then
-            shell_rc="$HOME/.bashrc"
-        elif [ -n "$ZSH_VERSION" ]; then
-            shell_rc="$HOME/.zshrc"
-        fi
-        # 如果配置文件存在且没有添加过，则添加
-        if [ -n "$shell_rc" ] && [ -f "$shell_rc" ] && ! grep -q "$dir" "$shell_rc"; then
-            echo "" >> "$shell_rc"
-            echo "# Added by AI Config Manager installer" >> "$shell_rc"
-            echo "export PATH=\"\$PATH:$dir\"" >> "$shell_rc"
+
+        # 添加到 .bashrc（在 interactive check 之前，这样 SSH 命令也能用）
+        if [ -f "$HOME/.bashrc" ] && ! grep -q "$dir" "$HOME/.bashrc"; then
+            # 找到 interactive check 的行号，在它之前插入
+            local line_num=$(grep -n "If not running interactively" "$HOME/.bashrc" 2>/dev/null | cut -d: -f1)
+            if [ -n "$line_num" ] && [ "$line_num" -gt 0 ]; then
+                # 在 interactive check 之前插入 PATH 配置
+                head -n $((line_num - 1)) "$HOME/.bashrc" > /tmp/bashrc_new
+                echo "" >> /tmp/bashrc_new
+                echo "# Added by AI Config Manager installer" >> /tmp/bashrc_new
+                echo "export PATH=\"\$PATH:$dir\"" >> /tmp/bashrc_new
+                tail -n +$((line_num)) "$HOME/.bashrc" >> /tmp/bashrc_new
+                mv /tmp/bashrc_new "$HOME/.bashrc"
+            else
+                echo "" >> "$HOME/.bashrc"
+                echo "# Added by AI Config Manager installer" >> "$HOME/.bashrc"
+                echo "export PATH=\"\$PATH:$dir\"" >> "$HOME/.bashrc"
+            fi
         fi
     fi
 }

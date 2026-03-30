@@ -186,6 +186,3 @@ if [[ ":$PATH:" != *":$WRAPPER_DIR:"* ]]; then
     echo "  export PATH=\"\$PATH:$WRAPPER_DIR\""
 fi
 echo ""
-
-# 运行程序
-ai-config

@@ -35,9 +35,16 @@ if ! check_venv; then
 fi
 
 if [ -d "$INSTALL_DIR" ]; then
-    echo "已安装，正在更新..."
-    cd "$INSTALL_DIR"
-    git pull
+    if [ -d "$INSTALL_DIR/.git" ]; then
+        echo "已安装，正在更新..."
+        cd "$INSTALL_DIR"
+        git pull
+    else
+        echo "检测到已安装但不是 git 仓库，重新安装..."
+        rm -rf "$INSTALL_DIR"
+        git clone "$REPO_URL" "$INSTALL_DIR"
+        cd "$INSTALL_DIR"
+    fi
 else
     git clone "$REPO_URL" "$INSTALL_DIR"
     cd "$INSTALL_DIR"

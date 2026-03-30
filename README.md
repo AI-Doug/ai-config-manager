@@ -4,22 +4,20 @@
 
 如果你有多个 AI 模型配置需要切换使用，这个工具可以帮你管理，一键切换。
 
-## 安装
-
-### 方式一：本地开发安装（推荐）
+## 安装（一行命令）
 
 ```bash
-git clone <repository-url>
+curl -sL https://raw.githubusercontent.com/AI-Doug/ai-config-manager/main/install.sh | bash
+```
+
+或手动安装：
+
+```bash
+git clone https://github.com/AI-Doug/ai-config-manager.git
 cd ai-config-manager
 python3 -m venv .venv
 source .venv/bin/activate
 pip install .
-```
-
-### 方式二：直接安装
-
-```bash
-pip install ai-config-manager
 ```
 
 ## 使用

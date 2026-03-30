@@ -50,7 +50,8 @@ else
     cd "$INSTALL_DIR"
 fi
 
-if [ ! -d ".venv" ]; then
+if [ ! -f ".venv/bin/activate" ]; then
+    echo "创建 Python 虚拟环境..."
     python3 -m venv .venv
 fi
 

@@ -136,29 +136,27 @@ WRAPPER_EOF
 
 chmod +x "$WRAPPER_PATH"
 
-# 确保 ~/.local/bin 在 PATH 中
-add_to_path() {
+# 配置 PATH - 多重保障
+configure_path() {
     local dir="$1"
 
-    # 添加到 PATH（临时）
-    export PATH="$PATH:$dir"
-
-    # 清理旧的 PATH 配置（如果有的话，放在错误的位置）
+    # 1. 清理旧的 PATH 配置
     if [ -f "$HOME/.bashrc" ]; then
-        # 移除所有与 AI Config Manager 相关的 PATH 配置
         sed -i '/# Added by AI Config Manager installer/d' "$HOME/.bashrc"
-        sed -i "\|export PATH=\".*\$HOME/.local/bin\"|d" "$HOME/.bashrc"
-        sed -i "\|export PATH=\".*:$dir\"|d" "$HOME/.bashrc"
+        sed -i "\|export PATH=\".*\.local/bin\"|d" "$HOME/.bashrc"
+    fi
 
-        # 找到 interactive check 的位置，在它之前插入
+    # 2. 在 .bashrc 中添加到 PATH（放在 interactive check 之后）
+    if [ -f "$HOME/.bashrc" ]; then
         local line_num=$(grep -n "If not running interactively" "$HOME/.bashrc" 2>/dev/null | cut -d: -f1)
         if [ -n "$line_num" ] && [ "$line_num" -gt 0 ]; then
-            # 在 interactive check 之前插入 PATH 配置
-            head -n $((line_num - 1)) "$HOME/.bashrc" > /tmp/bashrc_new
+            # 在 interactive check 块之后插入（跳过 case 语句和 esac）
+            local insert_line=$((line_num + 4))
+            head -n $insert_line "$HOME/.bashrc" > /tmp/bashrc_new
             echo "" >> /tmp/bashrc_new
             echo "# Added by AI Config Manager installer" >> /tmp/bashrc_new
             echo "export PATH=\"\$PATH:$dir\"" >> /tmp/bashrc_new
-            tail -n +$((line_num)) "$HOME/.bashrc" >> /tmp/bashrc_new
+            tail -n +$((insert_line + 1)) "$HOME/.bashrc" >> /tmp/bashrc_new
             mv /tmp/bashrc_new "$HOME/.bashrc"
         else
             echo "" >> "$HOME/.bashrc"
@@ -166,9 +164,29 @@ add_to_path() {
             echo "export PATH=\"\$PATH:$dir\"" >> "$HOME/.bashrc"
         fi
     fi
+
+    # 3. 添加到 .profile（登录 shell 会用到）
+    if [ -f "$HOME/.profile" ]; then
+        sed -i '/ai-config-manager/d' "$HOME/.profile"
+        echo "" >> "$HOME/.profile"
+        echo "# Added by AI Config Manager installer" >> "$HOME/.profile"
+        echo "export PATH=\"\$PATH:$dir\"" >> "$HOME/.profile"
+    fi
+
+    # 4. 尝试创建系统级 profile.d 脚本（需要 root 权限）
+    if [ -d "/etc/profile.d" ] && [ -w "/etc/profile.d" ]; then
+        cat > "/etc/profile.d/ai-config-manager.sh" << PROFILE_EOF
+# Added by AI Config Manager installer
+export PATH="\$PATH:$dir"
+PROFILE_EOF
+        chmod 644 /etc/profile.d/ai-config-manager.sh
+    fi
+
+    # 5. 立即在当前会话生效
+    export PATH="$PATH:$dir"
 }
 
-add_to_path "$WRAPPER_DIR"
+configure_path "$WRAPPER_DIR"
 
 echo ""
 echo "=================================================="
@@ -177,12 +195,30 @@ echo "=================================================="
 echo ""
 echo "运行命令: ai-config"
 echo ""
-if [[ ":$PATH:" != *":$WRAPPER_DIR:"* ]]; then
-    echo "提示: 如果运行 'ai-config' 提示找不到命令，请运行:"
-    echo "  source ~/.bashrc"
-    echo "  # 或重启终端"
+
+# 检查 PATH 是否在当前会话中可用
+if [[ ":$PATH:" == *":$WRAPPER_DIR:"* ]]; then
+    echo "✓ PATH 配置已生效"
+    if command -v ai-config &>/dev/null; then
+        echo "✓ ai-config 命令可用"
+    fi
+else
     echo ""
-    echo "或手动添加到 PATH:"
+    echo "=================================================="
+    echo "  重要: 需要加载新的 PATH 配置"
+    echo "=================================================="
+    echo ""
+    echo "请选择以下任一方式使配置生效："
+    echo ""
+    echo "方式1: 重新加载 shell 配置（推荐）"
+    echo "  source ~/.bashrc"
+    echo ""
+    echo "方式2: 登录新 shell"
+    echo "  exec bash -l"
+    echo ""
+    echo "方式3: 手动设置 PATH"
     echo "  export PATH=\"\$PATH:$WRAPPER_DIR\""
+    echo ""
+    echo "=================================================="
 fi
 echo ""
